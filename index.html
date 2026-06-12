@@ -649,6 +649,22 @@ async function submitPicks() {
   }
 }
 
+function parseMatchDate(raw) {
+  if (!raw) return '';
+  let dt = null;
+  // Try ISO-style "2026-07-01 12:00" from Sheets
+  const m1 = String(raw).match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+  if (m1) {
+    dt = new Date(Date.UTC(+m1[1], +m1[2]-1, +m1[3], +m1[4]+4, +m1[5]));
+  }
+  // Try a plain JS date string or number from Sheets
+  if (!dt || isNaN(dt)) dt = new Date(raw);
+  if (!dt || isNaN(dt)) return '';
+  try {
+    return dt.toLocaleString('en-US', {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit', timeZoneName:'short'});
+  } catch(e) { return ''; }
+}
+
 async function renderSchedule() {
   document.getElementById('schedule-loading').style.display = 'block';
   document.getElementById('schedule-content').style.display = 'none';
@@ -663,8 +679,7 @@ async function renderSchedule() {
     html += `<div class="section-title" style="margin-top:${html?'1.5rem':'0'}">${round}</div>`;
     matches.forEach(m => {
       const isTBD = !m.team1 || m.team1 === 'TBD';
-      const dt = m.date_time_et ? new Date(m.date_time_et.replace(' ','T') + ':00-04:00') : null;
-      const dateStr = dt ? dt.toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}) : '';
+      const dateStr = parseMatchDate(m.date_time_et);
       const result1 = m.team1 && m.team1 !== 'TBD' ? getPickResult(m.team1, round) : null;
       const winner = result1 === 'won' ? m.team1 : (result1 === 'lost' ? m.team2 : null);
       html += `
