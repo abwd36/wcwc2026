@@ -64,7 +64,8 @@
   .player-status.alive { color: var(--green); }
   .player-status.eliminated { color: var(--red); }
   .picks-preview { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-  .pick-chip { font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; background: var(--green-light); color: var(--green); font-weight: 500; border: 1px solid rgba(26,122,74,0.2); }
+  .pick-chip { font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; background: #e8f5e8; color: #1a7a1a; font-weight: 500; border: 1px solid rgba(26,122,26,0.2); }
+  .pick-chip.won { background: #e8f5e8; color: #1a7a1a; border-color: rgba(26,122,26,0.2); }
   .pick-chip.lost { background: var(--red-light); color: var(--red); border-color: rgba(192,57,43,0.2); text-decoration: line-through; }
   .pick-chip.pending { background: var(--gold-light); color: #b07800; border-color: rgba(240,165,0,0.25); }
   .pick-chip.hidden { background: #f0f0f0; color: #999; border-color: #e0e0e0; }
@@ -408,13 +409,15 @@ function renderLeaderboardGrid(round) {
     const isElim = p.statusInfo.status === 'eliminated';
     const initials = p.name.substring(0,2).toUpperCase();
     let picksHtml = '';
+    const rec = getRecord(p.name);
+    const recordHtml = rec.total > 0 ? `${rec.won} of ${rec.total} correct` : '';
 
     if (p.picks.length > 0) {
       const teams = [p.picks[0].pick1, p.picks[0].pick2].filter(Boolean);
       if (deadlinePassed) {
         picksHtml = teams.map(t => {
           const res = getPickResult(t, round);
-          return `<span class="pick-chip ${res === 'lost' ? 'lost' : res === 'won' ? '' : 'pending'}">${t}</span>`;
+          return `<span class="pick-chip ${res === 'lost' ? 'lost' : res === 'won' ? 'won' : 'pending'}">${t}</span>`;
         }).join('');
       } else {
         picksHtml = teams.map(() => `<span class="pick-chip hidden">Hidden</span>`).join('');
@@ -434,7 +437,10 @@ function renderLeaderboardGrid(round) {
           <div class="player-name">${p.name}</div>
           <div class="picks-preview" style="margin-top:4px">${picksHtml}</div>
         </div>
-        <div class="player-status ${isElim ? 'eliminated' : 'alive'}">${isElim ? '❌ Out' : '✅ Alive'}</div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div class="player-status ${isElim ? 'eliminated' : 'alive'}">${isElim ? '❌ Out' : '✅ Alive'}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px;">${recordHtml}</div>
+        </div>
       </div>`;
   });
 
