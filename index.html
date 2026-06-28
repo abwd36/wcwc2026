@@ -278,14 +278,35 @@ function showPage(name) {
   if (name === 'schedule') renderSchedule();
 }
 
-async function fetchData() {
-  const [players, picks, results, matches] = await Promise.all([
+let dataLoaded = false;
+let dataLoading = false;
+let dataLoadPromise = null;
+let lastFetchTime = 0;
+const CACHE_TTL = 3 * 60 * 1000; // 3 minutes
+
+async function fetchData(force = false) {
+  const now = Date.now();
+  // Return cached data if fresh enough
+  if (dataLoaded && !force && (now - lastFetchTime) < CACHE_TTL) return;
+  // If already loading, wait for that to finish
+  if (dataLoading) return dataLoadPromise;
+  dataLoading = true;
+  dataLoadPromise = Promise.all([
     fetch(API + '?action=getPlayers').then(r=>r.json()).catch(()=>[]),
     fetch(API + '?action=getPicks').then(r=>r.json()).catch(()=>[]),
     fetch(API + '?action=getResults').then(r=>r.json()).catch(()=>[]),
     fetch(API + '?action=getMatches').then(r=>r.json()).catch(()=>[])
-  ]);
-  appData = { players, picks, results, matches };
+  ]).then(([players, picks, results, matches]) => {
+    appData = { players, picks, results, matches };
+    dataLoaded = true;
+    lastFetchTime = Date.now();
+    dataLoading = false;
+  }).catch(() => { dataLoading = false; });
+  return dataLoadPromise;
+}
+
+async function refreshInBackground() {
+  await fetchData(true);
 }
 
 function isDeadlinePassed(round) {
@@ -330,11 +351,17 @@ function getCurrentRound() {
 }
 
 async function renderLeaderboard() {
-  document.getElementById('leaderboard-loading').style.display = 'block';
-  document.getElementById('leaderboard-content').style.display = 'none';
-  await fetchData();
-  document.getElementById('leaderboard-loading').style.display = 'none';
-  document.getElementById('leaderboard-content').style.display = 'block';
+  if (!dataLoaded) {
+    document.getElementById('leaderboard-loading').style.display = 'block';
+    document.getElementById('leaderboard-content').style.display = 'none';
+    await fetchData();
+    document.getElementById('leaderboard-loading').style.display = 'none';
+    document.getElementById('leaderboard-content').style.display = 'block';
+  } else {
+    document.getElementById('leaderboard-loading').style.display = 'none';
+    document.getElementById('leaderboard-content').style.display = 'block';
+    refreshInBackground().then(() => renderLeaderboardGrid(currentRound));
+  }
 
   const round = currentRound || getCurrentRound();
   const allRoundsWithData = ROUNDS.filter(r =>
@@ -419,11 +446,17 @@ function renderLeaderboardGrid(round) {
 }
 
 async function renderPicksForm() {
-  document.getElementById('picks-loading').style.display = 'block';
-  document.getElementById('picks-content').style.display = 'none';
-  await fetchData();
-  document.getElementById('picks-loading').style.display = 'none';
-  document.getElementById('picks-content').style.display = 'block';
+  if (!dataLoaded) {
+    document.getElementById('picks-loading').style.display = 'block';
+    document.getElementById('picks-content').style.display = 'none';
+    await fetchData();
+    document.getElementById('picks-loading').style.display = 'none';
+    document.getElementById('picks-content').style.display = 'block';
+  } else {
+    document.getElementById('picks-loading').style.display = 'none';
+    document.getElementById('picks-content').style.display = 'block';
+    refreshInBackground();
+  }
 
   const round = getCurrentRound();
   const deadlinePassed = isDeadlinePassed(round);
@@ -693,11 +726,17 @@ function parseMatchDate(raw) {
 }
 
 async function renderSchedule() {
-  document.getElementById('schedule-loading').style.display = 'block';
-  document.getElementById('schedule-content').style.display = 'none';
-  await fetchData();
-  document.getElementById('schedule-loading').style.display = 'none';
-  document.getElementById('schedule-content').style.display = 'block';
+  if (!dataLoaded) {
+    document.getElementById('schedule-loading').style.display = 'block';
+    document.getElementById('schedule-content').style.display = 'none';
+    await fetchData();
+    document.getElementById('schedule-loading').style.display = 'none';
+    document.getElementById('schedule-content').style.display = 'block';
+  } else {
+    document.getElementById('schedule-loading').style.display = 'none';
+    document.getElementById('schedule-content').style.display = 'block';
+    refreshInBackground();
+  }
 
   let html = '';
   for (const round of ROUNDS) {
