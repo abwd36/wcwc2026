@@ -393,6 +393,24 @@ function switchRound(round) {
   renderLeaderboardGrid(round);
 }
 
+function getRecord(playerName) {
+  let won = 0, total = 0;
+  ROUNDS.forEach(r => {
+    if (!isDeadlinePassed(r)) return;
+    const rPicks = getPlayerPicks(playerName, r);
+    if (rPicks.length === 0) return;
+    const teams = [rPicks[0].pick1, rPicks[0].pick2].filter(Boolean);
+    teams.forEach(t => {
+      const res = getPickResult(t, r);
+      if (res === 'won' || res === 'lost') {
+        total++;
+        if (res === 'won') won++;
+      }
+    });
+  });
+  return { won, total };
+}
+
 function renderLeaderboardGrid(round) {
   const deadlinePassed = isDeadlinePassed(round);
   const players = appData.players.map(p => {
