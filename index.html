@@ -391,11 +391,12 @@ function renderLeaderboardGrid(round) {
         }).join('');
       } else {
         picksHtml = teams.map(() => `<span class="pick-chip hidden">Hidden</span>`).join('');
+        picksHtml += `<span style="font-size:0.72rem;color:var(--green);margin-left:4px;">✓ Picks in</span>`;
       }
     } else if (deadlinePassed) {
       picksHtml = `<span class="pick-chip lost">No pick</span>`;
     } else {
-      picksHtml = `<span style="font-size:0.75rem;color:var(--text-muted)">Not yet submitted</span>`;
+      picksHtml = `<span style="font-size:0.75rem;color:var(--text-muted)">⏳ No picks yet</span>`;
     }
 
     html += `
