@@ -441,9 +441,18 @@ function renderPointsLeaderboard() {
   headerHtml += `<th>Points</th></tr>`;
 
   let bodyHtml = '';
+  // Assign ranks accounting for ties
+  let ranks = [];
+  let currentRank = 1;
   playerData.forEach((p, i) => {
-    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-    bodyHtml += `<tr><td class="name-cell"><span class="rank-badge ${rankClass}">${i+1}</span>${p.name}</td>`;
+    if (i > 0 && p.won < playerData[i-1].won) currentRank = i + 1;
+    ranks.push(currentRank);
+  });
+
+  playerData.forEach((p, i) => {
+    const rank = ranks[i];
+    const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+    bodyHtml += `<tr><td class="name-cell"><span class="rank-badge ${rankClass}">${rank}</span>${p.name}</td>`;
 
     activeRounds.forEach(round => {
       const deadlinePassed = isDeadlinePassed(round);
